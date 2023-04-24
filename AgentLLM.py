@@ -15,8 +15,12 @@ from Commands import Commands
 class AgentLLM:
     def __init__(self, primary_objective=None, initial_task=None, agent_name: str = "default"):
         self.CFG = Config(agent_name)
-        self.primary_objective = self.CFG.OBJECTIVE if primary_objective == None else primary_objective
-        self.initial_task = self.CFG.INITIAL_TASK if initial_task == None else initial_task
+        self.primary_objective = (
+            self.CFG.OBJECTIVE if primary_objective is None else primary_objective
+        )
+        self.initial_task = (
+            self.CFG.INITIAL_TASK if initial_task is None else initial_task
+        )
         self.initialize_task_list()
         self.commands = Commands(agent_name)
         self.available_commands = self.get_agent_commands()
@@ -34,7 +38,7 @@ class AgentLLM:
         )
         stripped_agent_name = "".join(c for c in agent_name if c in string.ascii_letters)
         self.collection = self.chroma_client.get_or_create_collection(
-            name=str(stripped_agent_name).lower(),
+            name=stripped_agent_name.lower(),
             metadata={"hnsw:space": "cosine"},
             embedding_function=self.embedding_function,
         )
@@ -80,13 +84,16 @@ class AgentLLM:
                 for command in commands[0].split("\n"):
                     command = command.strip()
                     command_name, command_args = None, {}
-                    # Extract command name and arguments using regex
-                    command_regex = re.match(r'(\w+)\((.*)\)', command)
-                    if command_regex:
+                    if command_regex := re.match(r'(\w+)\((.*)\)', command):
                         command_name, args_str = command_regex.groups()
                         if args_str:
                             # Parse arguments string into a dictionary
-                            command_args = dict((key.strip(), value.strip()) for key, value in (arg.split('=') for arg in args_str.split(',')))
+                            command_args = {
+                                key.strip(): value.strip()
+                                for key, value in (
+                                    arg.split('=') for arg in args_str.split(',')
+                                )
+                            }
 
                     # Search for the command in the available_commands list, and if found, use the command's name attribute for execution
                     if command_name is not None:
@@ -113,26 +120,25 @@ class AgentLLM:
         if long_term_access:
             interactions = self.CFG.memory["interactions"]
             context = [interaction["message"] for interaction in interactions[-top_results_num:]]
-            context = self.chunk_content("\n\n".join(context))[:top_results_num]
+            return self.chunk_content("\n\n".join(context))[:top_results_num]
         else:
             count = self.collection.count()
             if count == 0:
                 return []
             results = self.collection.query(query_texts=query, n_results=min(top_results_num, count), include=["metadatas"])
-            context = [item["result"] for item in results["metadatas"][0]]
-        return context
+            return [item["result"] for item in results["metadatas"][0]]
 
     def get_prompt_with_context(self, task: str, context: List[str]) -> str:
         context_str = "\n\n".join(context)
-        prompt = f"Task: {task}\n\nContext: {context_str}\n\nResponse:"
-        return prompt
+        return f"Task: {task}\n\nContext: {context_str}\n\nResponse:"
 
     def chunk_content(self, content: str, max_length: int = 500) -> List[str]:
         content_chunks = []
         content_length = len(content)
-        for i in range(0, content_length, max_length):
-            chunk = content[i:i + max_length]
-            content_chunks.append(chunk)
+        content_chunks.extend(
+            content[i : i + max_length]
+            for i in range(0, content_length, max_length)
+        )
         return content_chunks
 
     def set_agent_name(self, agent_name):
@@ -209,9 +215,11 @@ class AgentLLM:
         print("\033[92m\033[1m" + "\n*****COMMANDS*****\n" + "\033[0m\033[0m")
         print(self.available_commands)
         if self.commands is not None:
-            for command in self.available_commands:
-                if command["enabled"] != False:
-                    friendly_names.append(f"{command['friendly_name']} - {command['name']}({command['args']})")
+            friendly_names.extend(
+                f"{command['friendly_name']} - {command['name']}({command['args']})"
+                for command in self.available_commands
+                if command["enabled"] != False
+            )
             prompt = prompt.replace("{COMMANDS}", "\n".join(friendly_names))
         if context is not None:
             context = list(context)  # Convert set to list
