@@ -110,11 +110,11 @@ class Config():
             self.PRIORITY_PROMPT = f.read()
 
     def get_providers(self):
-        providers = []
-        for provider in glob.glob("provider/*.py"):
-            if provider != "provider/__init__.py":
-                providers.append(provider.replace("provider/", "").replace(".py", ""))
-        return providers
+        return [
+            provider.replace("provider/", "").replace(".py", "")
+            for provider in glob.glob("provider/*.py")
+            if provider != "provider/__init__.py"
+        ]
 
     def create_agent_folder(self, agent_name):
         agent_folder = f"agents/{agent_name}"
@@ -125,18 +125,14 @@ class Config():
         return agent_folder
 
     def load_command_files(self):
-        command_files = glob.glob("commands/*.py")
-        return command_files
+        return glob.glob("commands/*.py")
 
     def get_command_params(self, func):
-        params = {}
         sig = signature(func)
-        for name, param in sig.parameters.items():
-            if param.default == Parameter.empty:
-                params[name] = None
-            else:
-                params[name] = param.default
-        return params
+        return {
+            name: None if param.default == Parameter.empty else param.default
+            for name, param in sig.parameters.items()
+        }
 
     def load_commands(self):
         commands = []
@@ -235,10 +231,11 @@ class Config():
         memories_dir = "agents"
         if not os.path.exists(memories_dir):
             os.makedirs(memories_dir)
-        agents = []
-        for file in os.listdir(memories_dir):
-            if file.endswith(".yaml"):
-                agents.append(file.replace(".yaml", ""))
+        agents = [
+            file.replace(".yaml", "")
+            for file in os.listdir(memories_dir)
+            if file.endswith(".yaml")
+        ]
         output = []
         if not agents:
             # Create a new agent
@@ -422,8 +419,7 @@ class Config():
         # Create the path if it doesn't exist
         if not os.path.exists("prompts"):
             os.mkdir("prompts")
-        prompts = os.listdir("prompts")
-        return prompts
+        return os.listdir("prompts")
     
     def delete_prompt(self, prompt_name):
         os.remove(os.path.join("prompts", f"{prompt_name}.txt"))

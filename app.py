@@ -157,8 +157,7 @@ async def toggle_command(agent_name: str, payload: ToggleCommandPayload) -> Resp
 @app.post("/api/agent/{agent_name}/task", tags=["Agent"])
 async def toggle_task_agent(agent_name: str, objective: Objective) -> ResponseMessage:
     if agent_name not in agent_instances:
-        if agent_name not in agent_instances:
-            agent_instances[agent_name] = AgentLLM(agent_name)
+        agent_instances[agent_name] = AgentLLM(agent_name)
         agent_instance = agent_instances[agent_name]
         agent_instance.set_agent_name(agent_name)
         agent_instance.set_objective(objective.objective)
@@ -189,13 +188,11 @@ async def get_task_status(agent_name: str):
 
 @app.get("/api/chain", tags=["Chain"])
 async def get_chains():
-    chains = CFG.get_chains()
-    return chains
+    return CFG.get_chains()
 
 @app.get("/api/chain/{chain_name}", tags=["Chain"])
 async def get_chain(chain_name: str):
-    chain_data = CFG.get_chain(chain_name)
-    return chain_data
+    return CFG.get_chain(chain_name)
 
 @app.post("/api/chain", tags=["Chain"])
 async def add_chain(chain_name: ChainName) -> ResponseMessage:

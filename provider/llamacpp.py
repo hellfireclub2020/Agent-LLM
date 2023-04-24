@@ -17,5 +17,9 @@ class AIProvider:
         print(text, end="", flush=True)
 
     def instruct(self, prompt):
-        output = self.model.generate(f"Q: {prompt}", n_predict=55, new_text_callback=self.new_text_callback, n_threads=8)
-        return output
+        return self.model.generate(
+            f"Q: {prompt}",
+            n_predict=55,
+            new_text_callback=self.new_text_callback,
+            n_threads=8,
+        )
